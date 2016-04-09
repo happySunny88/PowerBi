@@ -1,6 +1,8 @@
 var webtrends1 = true;
 var IR = IR || {};
 var $$ = function (id) { return document.getElementById(id); }
+var isIEorEdge = false;
+var isFireFox = false;
 
 /* Define some animation easing functions here.
    For each easing function, generally there are four parameters need to be initialized before running:
@@ -84,7 +86,7 @@ IR.Common = {
                     scale = Math.ceil(IR.util.div(maxValue, 3));
                 }
 
-                return { range: [0, IR.util.mul(scale, 3)], scale: scale };//[0, IR.util.mul(scale, 3)];
+                return { range: [0, IR.util.mul(scale, 3)], scale: scale };
 
             }
             else {
@@ -92,7 +94,7 @@ IR.Common = {
                 scale = (parseFloat(scale));
                 scale = (scale * 100) % 2 == 0 ? scale : scale + 0.01;
                 var tmpmax = (scale * 3).toFixed(decimalNo);
-                return { range: [0.00, parseFloat(tmpmax)], scale: scale };// [0.00, parseFloat(tmpmax)];
+                return { range: [0.00, parseFloat(tmpmax)], scale: scale };
             }
         }
         else if (maxValue <= 0) {
@@ -106,14 +108,14 @@ IR.Common = {
                 else {
                     scale = Math.ceil(-IR.util.div(IR.util.mul(minValue, 10), 28));
                 }
-                return { range: [-IR.util.mul(scale, 3), 0], scale: scale };//[-IR.util.mul(scale, 3), 0];
+                return { range: [-IR.util.mul(scale, 3), 0], scale: scale };
             }
             else {
                 scale = (Math.abs(minValue) / 2.8).toFixed(2);
                 scale = (parseFloat(scale));
                 scale = (scale * 100) % 2 == 0 ? scale : scale + 0.01
                 var tmpmin = 0 - parseFloat((scale * 3).toFixed(decimalNo));
-                return { range: [tmpmin, 0.00], scale: scale };//[tmpmin, 0.00];
+                return { range: [tmpmin, 0.00], scale: scale };
             }
 
         } else if (Math.abs(minValue) > Math.abs(maxValue)) {
@@ -138,7 +140,7 @@ IR.Common = {
                     }
                 }
 
-                return { range: [-scale * 2, scale], scale: scale };//[-scale * 2, scale];
+                return { range: [-scale * 2, scale], scale: scale };
             }
             else {
                 scale = parseFloat(scale);
@@ -147,7 +149,7 @@ IR.Common = {
                 scale = (scale * 100) % 2 == 0 ? scale : scale + 0.01;
                 var tmpmax = parseFloat(parseFloat(scale).toFixed(decimalNo));
                 var tmpmin = parseFloat((parseFloat(scale) * 2).toFixed(decimalNo));
-                return { range: [-tmpmin, tmpmax], scale: scale };//[-tmpmin, tmpmax];
+                return { range: [-tmpmin, tmpmax], scale: scale };
             }
         }
         else if (Math.abs(minValue) <= Math.abs(maxValue)) {
@@ -176,7 +178,7 @@ IR.Common = {
                 }
                 var tmpmax = scale * 2;
                 var tmpmin = scale;
-                return { range: [-tmpmin, tmpmax], scale: scale };//[-tmpmin, tmpmax];
+                return { range: [-tmpmin, tmpmax], scale: scale };
 
             }
             else {
@@ -185,7 +187,7 @@ IR.Common = {
                 scale = scale * 100 % 2 == 0 ? scale : scale + 0.01;
                 var tmpmax = scale * 2;
                 var tmpmin = scale;
-                return { range: [-tmpmin, tmpmax], scale: scale };//[-tmpmin, tmpmax];
+                return { range: [-tmpmin, tmpmax], scale: scale };
             }
         }
     },
@@ -262,12 +264,21 @@ IR.ChartView = function (params) {
         color: ["#FF8C00", "#7FBA00", "#007233", "#68217A", "#0072C6", "#00B294"],
         footerLabel: ["Revenue", "Operating Income"]//for barversus page
     }
-    defaults.scale = parseFloat($("#" + params.renderTo).parent().width() / params.width).toFixed(2);
-    //console.log(defaults.scale);
 
+    var divwidth = $("#" + params.renderTo).parent().width();
+    if (divwidth > 500) {
+        divwidth = 500;
+    }
+    if (divwidth < params.width) {
+        divwidth = 380;
+    }
+    defaults.scale = parseFloat(divwidth / params.width).toFixed(2);
+    if (defaults.scale < 1) {
+
+        defaults.scale = 1;
+    }
     // merge params into defaults
     $.extend(defaults, params);
-
     for (var i = 0; i < defaults.groupTitles.length; i++) {
         defaults.groupTitles[i] = defaults.groupTitles[i].replace("&amp;", "&");
     }
@@ -276,7 +287,6 @@ IR.ChartView = function (params) {
     chart.init();
     switch (defaults.chartType) {
         case "cash":
-
             chart.createCashChart();
             break;
         case "barversus":
@@ -297,7 +307,6 @@ IR.ChartView = function (params) {
 
 IR.Config = function (params) {
     var settings = params;
-    //settings.height = 108;
     var data;
     var leftScale = {};
     var rightScale = {};
@@ -313,10 +322,7 @@ IR.Config = function (params) {
     var webtrends1 = false;
     return {
         init: function () {
-            //window.dataModel = window.dataModel || IR.DataModel(settings.xmlFile);
-            // window.dataModel = window.dataModel || { Quarterly: { labs: ['Q314', 'Q414', 'Q115', 'Q215', 'Q315'], values: ['14.425', '15.749', '14.928', '16.334', '14.568'] }, YearToDate: { labs: ['FY14', 'FY15'], values: ['44.006', '45.830'] } };
             window.dataModel = settings.jsonData;
-            //data = dataModel[settings.chartType](settings.data);
             data = dataModel;
             labels.Quarterly = data.Quarterly.labs;
             labels.YearToDate = data.YearToDate.labs;
@@ -1087,32 +1093,9 @@ IR.Config = function (params) {
 
             this.drawRect(gTar, 0, 0, settings.width, settings.height, "white");
 
-            //var element = d3.select("body").select("#" + settings.renderTo);
-            //var oriViewBox = element.attr("viewBox"), zoomViewBox = "";
-            //var pined = false;
-
-            //if (oriViewBox) {
-            //    var vbArray = oriViewBox.split(" ");
-            //    if (vbArray.length == 4)
-            //        zoomViewBox = vbArray[0] + " " + vbArray[1] + " " + vbArray[2] + " " + (vbArray[3] * settings.scale).toFixed(2);
-            //}
-
             //头部
             this.drawRect(gTar, 0, 0, settings.width, settings.titleHeight, "#f0f0f0");
             var fixed = gTar.append("g").attr("fill", "#b5b5b5").attr("class", "gFixed").style("cursor", "pointer");
-            this.drawCircle(fixed, settings.width - 6, 5, 4, "white", "#b5b5b5", 0.5).attr("fill-opacity", 0);
-            // draw the pin button
-            var pin = fixed.append("path").attr("transform", "translate(151.6,2.4) scale(0.01)").attr("d", "M512,179.197L332.893,0c-9.291,9.125-16.225,19.195-20.788,30.217c-4.549,11.021-6.837,22.297-6.837,33.828"
-                + "c0,11.358,2.288,22.545,6.893,33.573l-111.81,111.713c-9.401-4.866-19.175-8.533-29.335-10.993"
-                + "c-10.152-2.461-20.464-3.694-30.926-3.694c-16.453,0-32.374,2.978-47.759,8.939c-15.391,5.962-29.127,14.949-41.21,26.983"
-                + "l95.261,95.02l-61.143,70.372L39.37,451.566l-29.004,38.694c-6.741,9.953-10.111,16.501-10.111,19.63L0,511.242l0.51,0.248v0.841"
-                + "l0.503-0.593l1.089,0.248c3.129,0,9.677-3.309,19.637-9.939l38.695-28.824l55.608-46.041l70.716-61.233l94.676,94.924"
-                + "c12.089-12.076,21.091-25.819,27.032-41.203c5.927-15.398,8.891-31.278,8.891-47.683c0-10.504-1.227-20.843-3.652-30.961"
-                + "c-2.427-10.132-6.121-19.933-11.028-29.376l111.713-111.72c11.015,4.535,22.208,6.803,33.566,6.803"
-                + "c11.594,0,22.869-2.288,33.87-6.844C492.825,195.325,502.874,188.434,512,179.197z");
-            if (settings.chartType == "barsegment") {
-                pin.attr("transform", "translate(191.5,2.4) scale(0.01)");
-            }
 
             if (settings.subTitle.length > 15) {
                 this.drawText(gTar, 3, 8.5, settings.title, 5.5, "black").attr("font-weight", "bold");
@@ -1120,12 +1103,35 @@ IR.Config = function (params) {
             }
             else {
                 var marginTop = 9;
-                // if (settings.chartType == "doughnut") {
-                //     marginTop = 9;
-                // }
-                var title = this.drawText(gTar, 4, marginTop, settings.title, 5.5, "black").attr("font-weight", "bold");
-                var width = title.node().getBBox().width;
-                this.drawText(gTar, 4 + width + 1, marginTop, settings.subTitle, 4.5, "gray");
+                var title = this.drawText(gTar, 4, marginTop, settings.title, 5.5, "black").attr("font-weight", "bold").attr("display", "inline").attr("visibility", "visible");
+                var that = this;
+                if (isIEorEdge) {
+                    doLater(function () {
+                        var timer = setInterval(function () {
+                            //var width = 0;
+                            //var bbox;
+                            //// Browser is Firfox ,Maybe rendered the element first and make it visible. and then use it.
+                            //if (isFireFox) {
+                            //    try{
+                            //        bbox=title.node().getBBox();
+                            //    } catch (error) {
+                            //        title.attr("display", "inline").attr("visibility", "visible");
+                            //    }
+                            //}
+                            //bbox=title.node().getBBox();
+                            var width =title.node().getBBox().width;
+                            if (width > 0) {
+                                that.drawText(gTar, 4 + width + 1, marginTop, settings.subTitle, 4.5, "gray");
+                                clearInterval(timer);
+                            }
+                        }, 100);
+
+                    }, 200);
+                } else {
+                    var width = title.node().getBBox().width;
+                    that.drawText(gTar, 4 + width + 1, marginTop, settings.subTitle, 4.5, "gray");
+                }
+
             }
 
             var windowWidth = $(window).width();
@@ -1137,41 +1143,6 @@ IR.Config = function (params) {
             }
 
             var oriViewBox = "0 0 " + settings.width + " " + settings.height;
-            //svg的缩放事件
-            //gTar.on("mouseover", function () {
-            //    var width = $(window).width();
-            //    if (width < 663) {
-            //        d3.select("body").select("#" + settings.renderTo).style("z-index", 101);
-            //        fixed.attr("display", "none");
-            //    }
-            //    else {
-            //        fixed.attr("display", "block");
-            //        if (!pined)
-            //            d3.select("body").select("#" + settings.renderTo).transition().duration(300).ease("linear")
-            //                .attr("width", settings.width * 2.5)
-            //                .attr("height", settings.height * 2.5)
-            //                .style("margin-left", (settings.width * (settings.scale - 2.5)) + "px")
-            //                .style("z-index", 100);
-            //        else d3.select("body").select("#" + settings.renderTo).style("z-index", 101);
-            //    }
-            //}).on("mouseout", function () {
-            //    var width = $(window).width();
-            //    if (width < 663) {
-            //        d3.select("body").select("#" + settings.renderTo).style("z-index", 100);
-            //        fixed.attr("display", "none");
-            //    }
-            //    else {
-            //        fixed.attr("display", "block");
-            //        if (!pined)
-            //            d3.select("body").select("#" + settings.renderTo).transition().duration(100)
-            //                .attr("width", settings.width * settings.scale)
-            //                .attr("height", settings.height * settings.scale)
-            //                .style("margin-left", "0px")
-            //                .each("end", function () { d3.select(this).style("z-index", 0); });
-            //        else d3.select("body").select("#" + settings.renderTo).style("z-index", 100);
-            //    }
-            //});
-
             var start_x;
             var start_y;
             var end_x;
@@ -2636,9 +2607,18 @@ IR.Config = function (params) {
         }
         //响应式
         , onResize: function () {
+
+
+
             var divWidth = $("#" + settings.renderTo).parent().width();
+            if (divWidth > 500) {
+                divWidth = 500;
+            }
             //重新计算scale值
             settings.scale = parseFloat(divWidth / settings.width).toFixed(2);
+            if (settings.scale < 1) {
+                settings.scale = 1;
+            }
             var marginLeft = settings.width * 2.5 - divWidth;
 
             var width = $(window).width();
@@ -2882,8 +2862,10 @@ IR.Config = function (params) {
             return line;
         }
         , drawText: function (g, x, y, text, size, fill) {
-            var text = g.append("text").attr("x", x).attr("y", y).attr("font-size", size).attr("fill", fill).text(text);
-            return text;
+
+            var txt = g.append("text").attr("x", x).attr("y", y).attr("font-size", size).attr("fill", fill).text(text).attr("display", "inline").attr("visibility", "visible");
+            return txt;
+
         }
         , drawCircle: function (g, cx, cy, r, fill, stroke, strokeWidth) {
             var circle = g.append("circle").attr("cx", cx).attr("cy", cy).attr("r", r).attr("fill", fill).attr("stroke", stroke).attr("stroke-width", strokeWidth);
@@ -2891,44 +2873,53 @@ IR.Config = function (params) {
         }
     }
 }
+function doLater(callback, timeout) {
+    setTimeout(callback, timeout);
+}
+function checkBrowser() {
+    if (navigator.userAgent.indexOf("MSIE") > 0 || /Edge/.test(navigator.userAgent) || /Firefox/.test(navigator.userAgent)) {
+        isIEorEdge = true;
+        if (/Firefox/.test(navigator.userAgent)) {
+            isFireFox = true;
+        }
+    } else {
+        isIEorEdge = false;
+    }
+}
 
 IR.GenerateChart = function (params, json, container) {
+    checkBrowser();
     if (params) {
         var result = [];
         for (var i = 0; i < params.length; i++) {
-            var div = $("<div style='width:100%;'></div>");
-            var svg = $("<svg style='position:absolute;overflow:hidden;'></svg>");
+            var div = $("<div style='width:100%;text-align:center;'></div>");
+
+            var svg = $("<svg style='overflow:hidden;'></svg>");
+
             svg.attr("id", params[i].renderTo);
             div.append(svg);
-            //params[i].renderTo = "svg" + i;
+
             params[i].jsonData = json;
             container.empty().append(div);
-
             var divWidth = $(div).width();
-            var marginLeft = params[i].width - divWidth;
-            //$(svg).css("margin-left", (-marginLeft + "px"));
-
-            var chart = IR.ChartView(params[i]); // to render chart
+            var chart = IR.ChartView(params[i]);
             result.push(chart);
-
-
             var viewBox = d3.select("#" + params[i].renderTo).attr("viewBox");
             var vbArray = viewBox.split(" ");
             if (vbArray && vbArray.length == 4) {
                 var _height = $(svg).height();
-                //$(div).height(_height / (vbArray[3] / _height) + 10);
                 $(div).height(_height + 10);
             }
             else {
                 var height = parseInt(params[i].height * (divWidth / params[i].width)) + 10;
                 $(div).height(height);
             }
+            console.log(svg)
+            return result;
         }
-        return result;
     }
+
 }
-
-
 IR.util = {
     mul: function (arg1, arg2) {
         var m = 0, s1 = arg1.toString(), s2 = arg2.toString();
